@@ -19,7 +19,7 @@ def ratio(mat):
     emin,emax=mat.eigsh(k=2,which="BE",maxiter=1E4,return_eigenvectors=False)
     e=(emin+emax)/2
     kk=10
-    val=H_XXZ.eigsh(k=kk+2,sigma=e,maxiter=1E4,return_eigenvectors=False)
+    val=mat.eigsh(k=kk+2,sigma=e,maxiter=1E4,return_eigenvectors=False)
     val=np.sort(val)
     r=0
     for i in np.arange(1,kk+1):
@@ -33,7 +33,7 @@ def ratio(mat):
 L=12 # system size
 Jxy=1.0#np.sqrt(2.0) # xy interaction
 Jzz_0=1.0 # zz interaction
-hz=0.#1.0/np.sqrt(3.0) # z external field
+hz=0.2#1.0/np.sqrt(3.0) # z external field
 
 basis = spin_basis_1d(L,pauli=False,Nup=L//2) # zero magnetisation sector
 
@@ -42,8 +42,8 @@ J_zz = [[Jzz_0,i,i+1] for i in np.arange(L-1)] # OBC
 J_xy = [[Jxy/2.0,i,i+1] for i in np.arange(L-1)] # OBC
 
 #For PBC
-#J_zz.append([Jzz_0,L-1,0])
-#J_xy.append([Jxy/2.0,L-1,0])
+J_zz.append([Jzz_0,L-1,0])
+J_xy.append([Jxy/2.0,L-1,0])
 
 # static and dynamic lists
 static = [["+-",J_xy],["-+",J_xy],["zz",J_zz]]
@@ -55,7 +55,7 @@ H_XXZ = hamiltonian(static,dynamic,basis=basis,dtype=np.float64)
 # compute disordered z-field Hamiltonian
 no_checks={"check_herm":False,"check_pcon":False,"check_symm":False}
 
-hmbl=0.
+hmbl=0.2
 unscaled_fields=-1+2*ranf((basis.L,))
 h_z=[[unscaled_fields[i],i] for i in range(basis.L)]
 disorder_field = [["z",h_z]]
