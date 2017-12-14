@@ -17,12 +17,14 @@ from tqdm import tqdm
 
 def ratio(mat):
     emin,emax=mat.eigsh(k=2,which="BE",maxiter=1E4,return_eigenvectors=False)
+    # finding the max and min energy, can also be done with full diag H_MBL.toarray()
+    # and np.linalg.eig(matrix), np.sort(eigenvalues)
     e=(emin+emax)/2
-    kk=10
+    kk= 50
     val=mat.eigsh(k=kk+2,sigma=e,maxiter=1E4,return_eigenvectors=False)
     val=np.sort(val)
     r=0
-    for i in np.arange(1,kk+1):
+    for i in np.arange(1,kk+1):  #why cutting first and last off?
         delta_n = val[i]-val[i-1]
         delta_n1 = val[i+1]-val[i]
         r=r+min(delta_n, delta_n1)/max(delta_n, delta_n1)
