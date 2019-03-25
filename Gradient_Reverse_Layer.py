@@ -2,6 +2,7 @@ import tensorflow as tf
 from keras.engine import Layer
 import keras.backend as K
 
+
 def reverse_gradient(X, hp_lambda):
     '''Flips the sign of the incoming gradient during training.'''
     try:
@@ -21,8 +22,10 @@ def reverse_gradient(X, hp_lambda):
 
     return y
 
+
 class GradientReversal(Layer):
     '''Flip the sign of gradient during training.'''
+
     def __init__(self, hp_lambda, **kwargs):
         super(GradientReversal, self).__init__(**kwargs)
         self.supports_masking = False

@@ -19,17 +19,20 @@ def Hamiltonian_Heisenberg_chain(hmax, sigmax, sigmay, sigmaz, N, J, Jz):
 
 
 def statistics(n, E):
-    delta_n = (E[n]-E[n-1])
-    delta_np1 = (E[n+1]-E[n])
-    print(delta_n, delta_np1, min(delta_n, delta_np1)/max(delta_n, delta_np1))
-    return min(delta_n, delta_np1)/max(delta_n, delta_np1)
-          
+    delta_n = (E[n] - E[n - 1])
+    delta_np1 = (E[n + 1] - E[n])
+    print(delta_n, delta_np1,
+          min(delta_n, delta_np1) / max(delta_n, delta_np1))
+    return min(delta_n, delta_np1) / max(delta_n, delta_np1)
+
+
 samples = 1
+
 
 def find_epsilon_index(Energies, epsilon):
     # find epsilon = 0.5
     # 0.5 = (E-Emax)/(Emin-Emax) --> E = 0.5*(Emin+Emax)
-    targetE = epsilon*(Energies[0]-Energies[-1])+Energies[-1]
+    targetE = epsilon * (Energies[0] - Energies[-1]) + Energies[-1]
     return np.abs(np.array(Energies) - targetE).argmin()
 
 
@@ -40,64 +43,79 @@ def mean_energy(samples):
     for hmax in h_list:
         stat = 0.0
         for i in range(samples):
-            print(hmax, i)          
-            H = Hamiltonian_Heisenberg_chain(hmax, sigmax, sigmay, sigmaz, N, J, Jz)
-            m ,v = H.eigenstates()
+            print(hmax, i)
+            H = Hamiltonian_Heisenberg_chain(hmax, sigmax, sigmay, sigmaz, N,
+                                             J, Jz)
+            m, v = H.eigenstates()
             epsilon_index = find_epsilon_index(m, 0.5)
-            deltas = [] 
-            for n in range(max(1,epsilon_index-25),min(len(m)-1,epsilon_index+25)): #for n in range(1,2**N-1): # 
-                deltas.append(statistics(n,m))
+            deltas = []
+            for n in range(
+                    max(1, epsilon_index - 25),
+                    min(len(m) - 1,
+                        epsilon_index + 25)):  #for n in range(1,2**N-1): #
+                deltas.append(statistics(n, m))
             mean = np.mean(deltas)
             stat += mean
             print(deltas, mean)
             #print('Js', Jz, J)
             #print('epsilon_index', epsilon_index, a)
             #print(hmax, mean)
-        mean_list.append(stat/samples)
+        mean_list.append(stat / samples)
     return mean_list
-    
-
 
 
 def entanglement_entropy(hmax):
     liste = []
     for N in [4, 6, 8, 10]:
         print(N)
-        sigmax = [1/2.0*qt.tensor([qt.qeye(2)]*(j-1) + [qt.sigmax()] + [qt.qeye(2)]*(N-j))
-              for j in range(1, N+1)]
-        sigmay = [1/2.0*qt.tensor([qt.qeye(2)]*(j-1) + [qt.sigmay()] + [qt.qeye(2)]*(N-j))
-                  for j in range(1, N+1)]
-        sigmaz = [1/2.0*qt.tensor([qt.qeye(2)]*(j-1) + [qt.sigmaz()] + [qt.qeye(2)]*(N-j))
-                  for j in range(1, N+1)]
-        H = Hamiltonian_Heisenberg_chain(hmax, sigmax, sigmay, sigmaz, N, J, Jz)
-        m ,v = H.eigenstates()
-        epsilon_index = 2**N//2 # Just take middle of spectrum as in paper
+        sigmax = [
+            1 / 2.0 * qt.tensor([qt.qeye(2)] * (j - 1) + [qt.sigmax()] +
+                                [qt.qeye(2)] * (N - j))
+            for j in range(1, N + 1)
+        ]
+        sigmay = [
+            1 / 2.0 * qt.tensor([qt.qeye(2)] * (j - 1) + [qt.sigmay()] +
+                                [qt.qeye(2)] * (N - j))
+            for j in range(1, N + 1)
+        ]
+        sigmaz = [
+            1 / 2.0 * qt.tensor([qt.qeye(2)] * (j - 1) + [qt.sigmaz()] +
+                                [qt.qeye(2)] * (N - j))
+            for j in range(1, N + 1)
+        ]
+        H = Hamiltonian_Heisenberg_chain(hmax, sigmax, sigmay, sigmaz, N, J,
+                                         Jz)
+        m, v = H.eigenstates()
+        epsilon_index = 2**N // 2  # Just take middle of spectrum as in paper
         rho = v[epsilon_index]
         liste.append(qt.entropy_vn(rho, base=np.e, sparse=False))
     return liste
-    
 
 
-
-    
 N = 8
 J = 1.0
 Jz = 1.0
 hmax = 1.0
-qubitfactor = 1/2.0
+qubitfactor = 1 / 2.0
 
+sigmax = [
+    qubitfactor * qt.tensor([qt.qeye(2)] *
+                            (j - 1) + [qt.sigmax()] + [qt.qeye(2)] * (N - j))
+    for j in range(1, N + 1)
+]
+sigmay = [
+    qubitfactor * qt.tensor([qt.qeye(2)] *
+                            (j - 1) + [qt.sigmay()] + [qt.qeye(2)] * (N - j))
+    for j in range(1, N + 1)
+]
+sigmaz = [
+    qubitfactor * qt.tensor([qt.qeye(2)] *
+                            (j - 1) + [qt.sigmaz()] + [qt.qeye(2)] * (N - j))
+    for j in range(1, N + 1)
+]
 
-sigmax = [qubitfactor*qt.tensor([qt.qeye(2)]*(j-1) + [qt.sigmax()] + [qt.qeye(2)]*(N-j))
-          for j in range(1, N+1)]
-sigmay = [qubitfactor*qt.tensor([qt.qeye(2)]*(j-1) + [qt.sigmay()] + [qt.qeye(2)]*(N-j))
-          for j in range(1, N+1)]
-sigmaz = [qubitfactor*qt.tensor([qt.qeye(2)]*(j-1) + [qt.sigmaz()] + [qt.qeye(2)]*(N-j))
-          for j in range(1, N+1)]
-          
-          
 a = mean_energy(samples)
 #np.save('7mean_energy_N12', a)
-
 """
 # Fidelity check
 delta_hmax = 0.01
@@ -115,10 +133,7 @@ for hmax in np.arange(0.1, 4.0, 0.1):
     liste.append(meanfid/samples)
 """
 
-
-
 #liste = check_phase_trans(samples)
-    
 """
 for i in range(samples):          
     H = Hamiltonian_Heisenberg_chain(hmax, sigmax, sigmay, sigmaz, N, J, Jz)
@@ -156,4 +171,3 @@ y_dset = f.create_dataset('my_labels', (len(labels), 2), dtype='i')
 y_dset[:] = labels
 f.close()
 """
-

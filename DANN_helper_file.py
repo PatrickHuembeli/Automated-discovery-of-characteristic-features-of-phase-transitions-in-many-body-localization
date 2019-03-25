@@ -30,16 +30,18 @@ from keras import backend
 backend.set_image_data_format('channels_first')
 from keras.models import load_model
 from sklearn.cluster import KMeans
-           
+
+
 def train_loader(start, end, filename):
     x_batch = HDF5Matrix(filename, 'my_data', start=start, end=end)
     x_batch = np.stack([x_batch], axis=1)
-    y_batch = HDF5Matrix(filename,'my_labels', start=start, end=end)
+    y_batch = HDF5Matrix(filename, 'my_labels', start=start, end=end)
     return x_batch, y_batch
-                                 
+
 
 class DANNBuilder(object):
-    def __init__(self, nb_filters, nb_epoch, nb_classes, img_cols, img_rows, nb_pool, nb_conv, batch_size):
+    def __init__(self, nb_filters, nb_epoch, nb_classes, img_cols, img_rows,
+                 nb_pool, nb_conv, batch_size):
         self.model = None
         self.net = None
         self.domain_invariant_features = None
@@ -56,11 +58,13 @@ class DANNBuilder(object):
 
     def _build_feature_extractor(self, model_input):
         '''Build segment of net for feature extraction.'''
-        net = Convolution2D(self.nb_filters, (self.nb_conv, self.nb_conv),
-                            border_mode='valid',
-                            activation='relu')(model_input)
-        net = Convolution2D(self.nb_filters, (self.nb_conv, self.nb_conv),
-                            activation='relu')(net)
+        net = Convolution2D(
+            self.nb_filters, (self.nb_conv, self.nb_conv),
+            border_mode='valid',
+            activation='relu')(model_input)
+        net = Convolution2D(
+            self.nb_filters, (self.nb_conv, self.nb_conv),
+            activation='relu')(net)
         net = MaxPooling2D(pool_size=(self.nb_pool, self.nb_pool))(net)
         net = Dropout(0.5)(net)
         net = Flatten()(net)
@@ -70,8 +74,9 @@ class DANNBuilder(object):
     def _build_classifier(self, model_input):
         net = Dense(128, activation='relu')(model_input)
         net = Dropout(0.5)(net)
-        net = Dense(self.nb_classes, activation='softmax',
-                    name='classifier_output')(net)
+        net = Dense(
+            self.nb_classes, activation='softmax',
+            name='classifier_output')(net)
         return net
 
     def build_source_model(self, main_input, plot_model=False):
@@ -80,41 +85,52 @@ class DANNBuilder(object):
         model = Model(input=main_input, output=net)
         if plot_model:
             plot(model, show_shapes=True)
-        model.compile(loss={'classifier_output': 'categorical_crossentropy'},
-                      optimizer=self.opt, metrics=['accuracy'])
+        model.compile(
+            loss={'classifier_output': 'categorical_crossentropy'},
+            optimizer=self.opt,
+            metrics=['accuracy'])
         return model
 
     def build_dann_model(self, main_input, plot_model=False):
-        net = self._build_feature_extractor(main_input) # this is model until Flatten()
-        self.grl = GradientReversal(1.0) # add GradientReversal
-        branch = self.grl(net) 
+        net = self._build_feature_extractor(
+            main_input)  # this is model until Flatten()
+        self.grl = GradientReversal(1.0)  # add GradientReversal
+        branch = self.grl(net)
         branch = Dense(128, activation='relu')(branch)
         branch = Dropout(0.1)(branch)
-        branch = Dense(2, activation='softmax', name='domain_output')(branch) # add feed forward part
+        branch = Dense(
+            2, activation='softmax',
+            name='domain_output')(branch)  # add feed forward part
 
         # When building DANN model, route first half of batch (source examples)
         # to domain classifier, and route full batch (half source, half target)
         # to the domain classifier.
         _TRAIN = K.variable(1, dtype='uint8')
-        net = Lambda(lambda x: K.switch(K.learning_phase(),
-                     x[:int(self.batch_size // 2), :], x),
-                     output_shape=lambda x: ((self.batch_size // 2,) +
-                     x[1:]) if _TRAIN else x[0:])(net)
+        net = Lambda(
+            lambda x: K.switch(K.learning_phase(), x[:int(self.batch_size // 2), :], x),
+            output_shape=
+            lambda x: ((self.batch_size // 2, ) + x[1:]) if _TRAIN else x[0:])(
+                net)
         net = self._build_classifier(net)
         model = Model(input=main_input, output=[branch, net])
         if plot_model:
             plot(model, show_shapes=True)
-        model.compile(loss={'classifier_output': 'categorical_crossentropy',
-                      'domain_output': 'categorical_crossentropy'},
-                      optimizer=self.opt, metrics=['accuracy'])
+        model.compile(
+            loss={
+                'classifier_output': 'categorical_crossentropy',
+                'domain_output': 'categorical_crossentropy'
+            },
+            optimizer=self.opt,
+            metrics=['accuracy'])
         return model
 
     def build_tsne_model(self, main_input):
         '''Create model to output intermediate layer
         activations to visualize domain invariant features'''
-        tsne_model = Model(input=main_input,
-                           output=self.domain_invariant_features)
+        tsne_model = Model(
+            input=main_input, output=self.domain_invariant_features)
         return tsne_model
+
 
 def plot_embedding(X, y, d, title=None):
     """Plot an embedding X with the class label y colored by the domain d."""
@@ -126,13 +142,20 @@ def plot_embedding(X, y, d, title=None):
     plt.subplot(111)
     for i in range(X.shape[0]):
         # plot colored number
-        plt.text(X[i, 0], X[i, 1], str(y[i]),
-                 color=plt.cm.bwr(d[i] / 1.),
-                 fontdict={'weight': 'bold', 'size': 9})
+        plt.text(
+            X[i, 0],
+            X[i, 1],
+            str(y[i]),
+            color=plt.cm.bwr(d[i] / 1.),
+            fontdict={
+                'weight': 'bold',
+                'size': 9
+            })
     plt.xticks([]), plt.yticks([])
     if title is not None:
         plt.title(title)
-        
+
+
 def batch_generator(len_x_train, id_array, batch_size, data, labels):
     np.random.shuffle(id_array)  # shuffling is fullfilled here
     for start in range(0, len_x_train, batch_size):
@@ -140,7 +163,8 @@ def batch_generator(len_x_train, id_array, batch_size, data, labels):
         batch_ids = id_array[start:end]
         if labels is not None:
             x_batch = data[batch_ids]
-            y_batch = labels[batch_ids]  # this only works if labels is numpy array
+            y_batch = labels[
+                batch_ids]  # this only works if labels is numpy array
             yield x_batch, y_batch
         else:
             x_batch = data[batch_ids]
